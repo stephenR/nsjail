@@ -220,16 +220,16 @@ void subprocRunChild(struct nsjconf_t *nsjconf, int fd_in, int fd_out, int fd_er
 		PLOG_E("clone(flags=%#x) failed. You probably need root privileges if your system "
 		       "doesn't support CLONE_NEWUSER. Alternatively, you might want to recompile your "
 		       "kernel with support for namespaces", flags);
+		close(pipefd[0]);
+		close(pipefd[1]);
 		return;
 	}
 
-	if (netCloneMacVtapAndNS(nsjconf, pid) == false) {
+	if (netCloneNetIfaces(nsjconf, pid) == false) {
 		LOG_E("Couldn't create and put MACVTAP interface into NS of PID '%d'", pid);
 	}
 
 	char log_buf[4096];
-
-	close(pipefd[1]);
 	ssize_t sz;
 	while ((sz = read(pipefd[0], log_buf, sizeof(log_buf) - 1)) > 0) {
 		log_buf[sz] = '\0';

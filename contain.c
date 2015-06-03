@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <linux/capability.h>
+#include <linux/securebits.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -105,21 +106,6 @@ bool containDropPrivs(struct nsjconf_t * nsjconf)
 	if (containUidGidMap(nsjconf, nsjconf->uid, nsjconf->gid) == false) {
 		return false;
 	}
-	/*
-	 * Best effort because of /proc/self/setgroups
-	 */
-	gid_t *group_list = NULL;
-	if (setgroups(0, group_list) == -1) {
-		PLOG_D("setgroups(NULL) failed");
-	}
-	if (setresgid(nsjconf->gid, nsjconf->gid, nsjconf->gid) == -1) {
-		PLOG_E("setresgid(%u)", nsjconf->gid);
-		return false;
-	}
-	if (setresuid(nsjconf->uid, nsjconf->uid, nsjconf->uid) == -1) {
-		PLOG_E("setresuid(%u)", nsjconf->uid);
-		return false;
-	}
 #ifndef PR_SET_NO_NEW_PRIVS
 #define PR_SET_NO_NEW_PRIVS 38
 #endif
@@ -127,10 +113,10 @@ bool containDropPrivs(struct nsjconf_t * nsjconf)
 		/* Only new kernels support it */
 		PLOG_W("prctl(PR_SET_NO_NEW_PRIVS, 1)");
 	}
-
 	if (nsjconf->keep_caps == false) {
-		if (prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) == -1) {
-			PLOG_E("prctl(PR_SET_KEEPCAPS, 0)");
+		if (prctl(PR_SET_SECUREBITS, SECBIT_KEEP_CAPS_LOCKED | SECBIT_NO_SETUID_FIXUP |
+			  SECBIT_NO_SETUID_FIXUP_LOCKED | SECBIT_NOROOT | SECBIT_NOROOT_LOCKED, 0, 0, 0) == -1) {
+			PLOG_E("prctl(PR_SET_SECUREBITS)");
 			return false;
 		}
 		struct __user_cap_header_struct cap_hdr = {
@@ -147,6 +133,38 @@ bool containDropPrivs(struct nsjconf_t * nsjconf)
 			return false;
 		}
 	}
+	if (nsjconf->keep_caps == true) {
+		if (prctl(PR_SET_SECUREBITS, SECBIT_KEEP_CAPS, 0, 0, 0) == -1) {
+			PLOG_E("prctl(PR_SET_SECUREBITS)");
+			return false;
+		}
+		struct __user_cap_header_struct cap_hdr = {
+			.version = _LINUX_CAPABILITY_VERSION_3,
+			.pid = 0,
+		};
+		struct __user_cap_data_struct cap_data[_LINUX_CAPABILITY_U32S_3];
+		memset(cap_data, '\xFF', sizeof(cap_data));
+		if (syscall(__NR_capset, &cap_hdr, &cap_data) == -1) {
+			PLOG_E("capset()");
+			return false;
+		}
+	}
+	/*
+	 * Best effort because of /proc/self/setgroups
+	 */
+	gid_t *group_list = NULL;
+	if (setgroups(0, group_list) == -1) {
+		PLOG_D("setgroups(NULL) failed");
+	}
+	if (setresgid(nsjconf->gid, nsjconf->gid, nsjconf->gid) == -1) {
+		PLOG_E("setresgid(%u)", nsjconf->gid);
+		return false;
+	}
+	if (setresuid(nsjconf->uid, nsjconf->uid, nsjconf->uid) == -1) {
+		PLOG_E("setresuid(%u)", nsjconf->uid);
+		return false;
+	}
+
 	return true;
 }
 

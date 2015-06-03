@@ -81,7 +81,8 @@ struct nsjconf_t {
 	bool is_silent;
 	struct mountfs_t *bindmountpts;
 	struct mountfs_t *tmpfsmountpts;
-	char *iface;
+	char *iface_macvtap;
+	char *iface_macvlan;
 	uid_t initial_uid;
 	gid_t initial_gid;
 	unsigned int max_conns_per_ip;

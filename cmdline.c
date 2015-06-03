@@ -198,7 +198,8 @@ bool cmdlineParse(int argc, char *argv[], struct nsjconf_t * nsjconf)
 		{{"silent", no_argument, NULL, 0x0504}, "Redirect child's fd:0/1/2 to /dev/null (default: false)"},
 		{{"bindmount", required_argument, NULL, 'B'}, "List of mountpoints to be mounted --bind inside the container. Can be specified multiple times (default: none)"},
 		{{"tmpfsmount", required_argument, NULL, 'T'}, "List of mountpoints to be mounted as RW/tmpfs inside the container. Can be specified multiple times (default: none)"},
-		{{"iface", required_argument, NULL, 'I'}, "Interface which will be cloned (MACVTAP) and put inside the subprocess' namespace"},
+		{{"net_macvtap", required_argument, NULL, 0x601}, "Interface which will be cloned (MACVTAP) and put inside the namespace as vt0"},
+		{{"net_macvlan", required_argument, NULL, 0x602}, "Interface which will be cloned (MACVLAN) and put inside the namespace as vl0"},
 		{{0, 0, 0, 0}, NULL},
 	};
         /*  *INDENT-ON* */
@@ -357,8 +358,11 @@ bool cmdlineParse(int argc, char *argv[], struct nsjconf_t * nsjconf)
 				break;
 			}
 			break;
-		case 'I':
-			nsjconf->iface = optarg;
+		case 0x601:
+			nsjconf->iface_macvtap = optarg;
+			break;
+		case 0x602:
+			nsjconf->iface_macvlan = optarg;
 			break;
 		default:
 			cmdlineUsage(argv[0], custom_opts);

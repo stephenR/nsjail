@@ -20,11 +20,11 @@
 CC = gcc
 CFLAGS += -O2 -g -ggdb -c -std=c11 \
 	-D_GNU_SOURCE \
-	-fstack-protector-all -Wformat -Wformat=2 -Wformat-security -fPIE -D_FORTIFY_SOURCE=2 -Wa,--noexecstack \
-	-Wall -Wextra -Werror
+	-fstack-protector-all -Wformat=2 -fPIE -D_FORTIFY_SOURCE=2 -Wa,--noexecstack \
+	-Wall -Wextra -Werror `pkg-config --cflags libnl-route-3.0`
 
 LD = gcc
-LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie
+LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie `pkg-config --libs libnl-route-3.0`
 
 SRCS = nsjail.c cmdline.c contain.c log.c net.c subproc.c sandbox.c seccomp/bpf-helper.c
 OBJS = $(SRCS:.c=.o)
