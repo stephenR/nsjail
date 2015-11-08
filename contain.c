@@ -102,6 +102,10 @@ static bool containUidGidMap(struct nsjconf_t *nsjconf, uid_t uid, gid_t gid)
 
 bool containInitUserNs(struct nsjconf_t * nsjconf)
 {
+	if (nsjconf->clone_newuser == false) {
+		return true;
+	}
+
 	if (containSetGroups() == false) {
 		return false;
 	}
@@ -223,6 +227,34 @@ bool containMountFS(struct nsjconf_t * nsjconf)
 		if (chdir("/") == -1) {
 			PLOG_E("chdir('/')");
 			return false;
+		}
+		return true;
+	}
+
+	if (nsjconf->clone_newuser == false) {
+		struct mounts_t *p;
+		LIST_FOREACH(p, &nsjconf->mountpts, pointers) {
+			char dst[PATH_MAX];
+			snprintf(dst, sizeof(dst), "%s/%s", nsjconf->chroot, p->dst);
+			if (containMount(p, dst) == false) {
+				return false;
+			}
+		}
+
+		if (chroot(nsjconf->chroot) == -1) {
+			PLOG_E("chroot('%s')", nsjconf->chroot) {
+				return false;
+			}
+		}
+		if (chdir("/") == -1) {
+			PLOG_E("chdir('/')");
+			return false;
+		}
+
+		LIST_FOREACH(p, &nsjconf->mountpts, pointers) {
+			if (containRemountRO(p) == false) {
+				return false;
+			}
 		}
 		return true;
 	}
