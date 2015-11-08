@@ -135,9 +135,11 @@ bool containDropPrivs(struct nsjconf_t * nsjconf)
 #ifndef PR_SET_NO_NEW_PRIVS
 #define PR_SET_NO_NEW_PRIVS 38
 #endif
-	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
-		/* Only new kernels support it */
-		PLOG_W("prctl(PR_SET_NO_NEW_PRIVS, 1)");
+	if (nsjconf->uid != 0) {
+		if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
+			/* Only new kernels support it */
+			PLOG_W("prctl(PR_SET_NO_NEW_PRIVS, 1)");
+		}
 	}
 
 	if (nsjconf->keep_caps == false) {
