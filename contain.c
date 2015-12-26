@@ -266,17 +266,11 @@ bool containMountFS(struct nsjconf_t * nsjconf)
 		PLOG_E("mount('%s', 'tmpfs'", destdir);
 		return false;
 	}
-	char newrootdir[PATH_MAX];
-	snprintf(newrootdir, sizeof(newrootdir), "%s/%s", destdir, "new_root");
-	if (mkdir(newrootdir, 0755) == -1) {
-		PLOG_E("mkdir('%s')", newrootdir);
-		return false;
-	}
 
 	struct mounts_t *p;
 	LIST_FOREACH(p, &nsjconf->mountpts, pointers) {
 		char dst[PATH_MAX];
-		snprintf(dst, sizeof(dst), "%s/%s", newrootdir, p->dst);
+		snprintf(dst, sizeof(dst), "%s/%s", destdir, p->dst);
 		if (containMount(p, dst) == false) {
 			return false;
 		}
@@ -295,10 +289,6 @@ bool containMountFS(struct nsjconf_t * nsjconf)
 
 	if (umount2("/pivot_root", MNT_DETACH) == -1) {
 		PLOG_E("umount2('/pivot_root', MNT_DETACH)");
-		return false;
-	}
-	if (chroot("/new_root") == -1) {
-		PLOG_E("CHROOT('/new_root')");
 		return false;
 	}
 	
