@@ -248,6 +248,20 @@ bool containMountFS(struct nsjconf_t * nsjconf)
 				return false;
 			}
 		}
+		char pivotrootdir[PATH_MAX];
+		snprintf(pivotrootdir, sizeof(pivotrootdir), "/%s", "pivot_root");
+		if (mkdir(pivotrootdir, 0755) == -1) {
+			PLOG_E("mkdir('%s')", pivotrootdir);
+			return false;
+		}
+		if (syscall(__NR_pivot_root, "/", pivotrootdir) == -1) {
+			PLOG_E("pivot_root('/', '%s')", pivotrootdir);
+			return false;
+		}
+		if (umount2("/pivot_root", MNT_DETACH) == -1) {
+			PLOG_E("umount2('/pivot_root', MNT_DETACH)");
+			return false;
+		}
 		if (chdir("/") == -1) {
 			PLOG_E("chdir('/')");
 			return false;
